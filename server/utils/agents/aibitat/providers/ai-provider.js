@@ -12,8 +12,11 @@
 
 const { ChatOpenAI } = require("@langchain/openai");
 const { ChatAnthropic } = require("@langchain/anthropic");
+const { ChatBedrockConverse } = require("@langchain/aws");
 const { ChatOllama } = require("@langchain/community/chat_models/ollama");
 const { toValidNumber } = require("../../../http");
+const { getLLMProviderClass } = require("../../../helpers");
+const { parseLMStudioBasePath } = require("../../../AiProviders/lmStudio");
 
 const DEFAULT_WORKSPACE_PROMPT =
   "You are a helpful ai assistant who can assist the user and use tools available to help answer the users prompts and questions.";
@@ -78,7 +81,7 @@ class Provider {
           configuration: {
             baseURL: "https://openrouter.ai/api/v1",
             defaultHeaders: {
-              "HTTP-Referer": "https://useanything.com",
+              "HTTP-Referer": "https://anythingllm.com",
               "X-Title": "AnythingLLM",
             },
           },
@@ -113,6 +116,69 @@ class Provider {
           ),
           ...config,
         });
+      case "bedrock":
+        return new ChatBedrockConverse({
+          model: process.env.AWS_BEDROCK_LLM_MODEL_PREFERENCE,
+          region: process.env.AWS_BEDROCK_LLM_REGION,
+          credentials: {
+            accessKeyId: process.env.AWS_BEDROCK_LLM_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_BEDROCK_LLM_ACCESS_KEY,
+          },
+          ...config,
+        });
+      case "fireworksai":
+        return new ChatOpenAI({
+          apiKey: process.env.FIREWORKS_AI_LLM_API_KEY,
+          ...config,
+        });
+      case "apipie":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://apipie.ai/v1",
+          },
+          apiKey: process.env.APIPIE_LLM_API_KEY ?? null,
+          ...config,
+        });
+      case "deepseek":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://api.deepseek.com/v1",
+          },
+          apiKey: process.env.DEEPSEEK_API_KEY ?? null,
+          ...config,
+        });
+      case "xai":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://api.x.ai/v1",
+          },
+          apiKey: process.env.XAI_LLM_API_KEY ?? null,
+          ...config,
+        });
+      case "novita":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://api.novita.ai/v3/openai",
+          },
+          apiKey: process.env.NOVITA_LLM_API_KEY ?? null,
+          ...config,
+        });
+      case "ppio":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://api.ppinfra.com/v3/openai",
+          },
+          apiKey: process.env.PPIO_API_KEY ?? null,
+          ...config,
+        });
+      case "gemini":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+          },
+          apiKey: process.env.GEMINI_API_KEY ?? null,
+          ...config,
+        });
 
       // OSS Model Runners
       // case "anythingllm_ollama":
@@ -128,7 +194,7 @@ class Provider {
       case "lmstudio":
         return new ChatOpenAI({
           configuration: {
-            baseURL: process.env.LMSTUDIO_BASE_PATH?.replace(/\/+$/, ""),
+            baseURL: parseLMStudioBasePath(process.env.LMSTUDIO_BASE_PATH),
           },
           apiKey: "not-used", // Needs to be specified or else will assume OpenAI
           ...config,
@@ -157,20 +223,38 @@ class Provider {
           apiKey: process.env.TEXT_GEN_WEB_UI_API_KEY ?? "not-used",
           ...config,
         });
+      case "litellm":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: process.env.LITE_LLM_BASE_PATH,
+          },
+          apiKey: process.env.LITE_LLM_API_KEY ?? null,
+          ...config,
+        });
+      case "nvidia-nim":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: process.env.NVIDIA_NIM_LLM_BASE_PATH,
+          },
+          apiKey: null,
+          ...config,
+        });
+
       default:
         throw new Error(`Unsupported provider ${provider} for this task.`);
     }
   }
 
-  static contextLimit(provider = "openai") {
-    switch (provider) {
-      case "openai":
-        return 8_000;
-      case "anthropic":
-        return 100_000;
-      default:
-        return 8_000;
-    }
+  /**
+   * Get the context limit for a provider/model combination using static method in AIProvider class.
+   * @param {string} provider
+   * @param {string} modelName
+   * @returns {number}
+   */
+  static contextLimit(provider = "openai", modelName) {
+    const llm = getLLMProviderClass({ provider });
+    if (!llm || !llm.hasOwnProperty("promptWindowLimit")) return 8_000;
+    return llm.promptWindowLimit(modelName);
   }
 
   // For some providers we may want to override the system prompt to be more verbose.

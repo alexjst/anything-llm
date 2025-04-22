@@ -1,7 +1,7 @@
 <a name="readme-top"></a>
 
 <p align="center">
-  <a href="https://useanything.com"><img src="https://github.com/Mintplex-Labs/anything-llm/blob/master/images/wordmark.png?raw=true" alt="AnythingLLM logo"></a>
+  <a href="https://anythingllm.com"><img src="https://github.com/Mintplex-Labs/anything-llm/blob/master/images/wordmark.png?raw=true" alt="AnythingLLM logo"></a>
 </p>
 
 <div align='center'>
@@ -20,7 +20,7 @@
   <a href="https://github.com/Mintplex-Labs/anything-llm/blob/master/LICENSE" target="_blank">
       <img src="https://img.shields.io/static/v1?label=license&message=MIT&color=white" alt="ライセンス">
   </a> |
-  <a href="https://docs.useanything.com" target="_blank">
+  <a href="https://docs.anythingllm.com" target="_blank">
     ドキュメント
   </a> |
    <a href="https://my.mintplexlabs.com/aio-checkout?product=anythingllm" target="_blank">
@@ -33,7 +33,7 @@
 </p>
 
 <p align="center">
-👉 デスクトップ用AnythingLLM（Mac、Windows、Linux対応）！<a href="https://useanything.com/download" target="_blank">今すぐダウンロード</a>
+👉 デスクトップ用AnythingLLM（Mac、Windows、Linux対応）！<a href="https://anythingllm.com/download" target="_blank">今すぐダウンロード</a>
 </p>
 
 これは、任意のドキュメント、リソース、またはコンテンツの断片を、チャット中にLLMが参照として使用できるコンテキストに変換できるフルスタックアプリケーションです。このアプリケーションを使用すると、使用するLLMまたはベクトルデータベースを選択し、マルチユーザー管理と権限をサポートできます。
@@ -53,11 +53,11 @@ AnythingLLMは、市販のLLMや人気のあるオープンソースLLM、およ
 
 AnythingLLMは、ドキュメントを`ワークスペース`と呼ばれるオブジェクトに分割します。ワークスペースはスレッドのように機能しますが、ドキュメントのコンテナ化が追加されています。ワークスペースはドキュメントを共有できますが、互いに通信することはないため、各ワークスペースのコンテキストをクリーンに保つことができます。
 
-AnythingLLMのいくつかのクールな機能
+## AnythingLLMのいくつかのクールな機能
 
 - **マルチユーザーインスタンスのサポートと権限付与**
 - ワークスペース内のエージェント（ウェブを閲覧、コードを実行など）
-- [ウェブサイト用のカスタム埋め込み可能なチャットウィジェット](./embed/README.md)
+- [ウェブサイト用のカスタム埋め込み可能なチャットウィジェット](https://github.com/Mintplex-Labs/anythingllm-embed/blob/main/README.md)
 - 複数のドキュメントタイプのサポート（PDF、TXT、DOCXなど）
 - シンプルなUIからベクトルデータベース内のドキュメントを管理
 - 2つのチャットモード`会話`と`クエリ`。会話は以前の質問と修正を保持します。クエリはドキュメントに対するシンプルなQAです
@@ -82,12 +82,15 @@ AnythingLLMのいくつかのクールな機能
 - [LM Studio (すべてのモデル)](https://lmstudio.ai)
 - [LocalAi (すべてのモデル)](https://localai.io/)
 - [Together AI (チャットモデル)](https://www.together.ai/)
+- [Fireworks AI (チャットモデル)](https://fireworks.ai/)
 - [Perplexity (チャットモデル)](https://www.perplexity.ai/)
 - [OpenRouter (チャットモデル)](https://openrouter.ai/)
+- [Novita AI (チャットモデル)](https://novita.ai/model-api/product/llm-api?utm_source=github_anything-llm&utm_medium=github_readme&utm_campaign=link)
 - [Mistral](https://mistral.ai/)
 - [Groq](https://groq.com/)
 - [Cohere](https://cohere.com/)
 - [KoboldCPP](https://github.com/LostRuins/koboldcpp)
+- [PPIO](https://ppinfra.com?utm_source=github_anything-llm)
 
 **埋め込みモデル：**
 
@@ -133,20 +136,20 @@ AnythingLLMのいくつかのクールな機能
 - `server`: すべてのインタラクションを処理し、すべてのベクトルDB管理およびLLMインタラクションを行うNodeJS expressサーバー。
 - `collector`: UIからドキュメントを処理および解析するNodeJS expressサーバー。
 - `docker`: Dockerの指示およびビルドプロセス + ソースからのビルド情報。
-- `embed`: [埋め込みウィジェット](./embed/README.md)の生成に特化したコード。
+- `embed`: [埋め込みウィジェット](../embed/README.md)の生成に特化したコード。
 
 ## 🛳 セルフホスティング
 
 Mintplex Labsおよびコミュニティは、AnythingLLMをローカルで実行できる多数のデプロイメント方法、スクリプト、テンプレートを維持しています。以下の表を参照して、お好みの環境でのデプロイ方法を読むか、自動デプロイを行ってください。
 | Docker | AWS | GCP | Digital Ocean | Render.com |
-|----------------------------------------|----:|-----|---------------|------------|
+|----------------------------------------|----|-----|---------------|------------|
 | [![Docker上でデプロイ][docker-btn]][docker-deploy] | [![AWS上でデプロイ][aws-btn]][aws-deploy] | [![GCP上でデプロイ][gcp-btn]][gcp-deploy] | [![DigitalOcean上でデプロイ][do-btn]][do-deploy] | [![Render.com上でデプロイ][render-btn]][render-deploy] |
 
 | Railway                                             |
 | --------------------------------------------------- |
 | [![Railway上でデプロイ][railway-btn]][railway-deploy] |
 
-[Dockerを使用せずに本番環境のAnythingLLMインスタンスを設定する →](./BARE_METAL.md)
+[Dockerを使用せずに本番環境のAnythingLLMインスタンスを設定する →](../BARE_METAL.md)
 
 ## 開発環境のセットアップ方法
 
@@ -156,9 +159,9 @@ Mintplex Labsおよびコミュニティは、AnythingLLMをローカルで実�
 - `yarn dev:frontend` ローカルでフロントエンドを起動します（リポジトリのルートから）。
 - `yarn dev:collector` ドキュメントコレクターを実行します（リポジトリのルートから）。
 
-[ドキュメントについて学ぶ](./server/storage/documents/DOCUMENTS.md)
+[ドキュメントについて学ぶ](../server/storage/documents/DOCUMENTS.md)
 
-[ベクトルキャッシュについて学ぶ](./server/storage/vector-cache/VECTOR_CACHE.md)
+[ベクトルキャッシュについて学ぶ](../server/storage/vector-cache/VECTOR_CACHE.md)
 
 ## 貢献する方法
 
@@ -210,8 +213,8 @@ Mintplex Labs Inc.によって開発されたAnythingLLMには、匿名の使用
 
 ---
 
-Copyright © 2024 [Mintplex Labs][profile-link]。<br />
-このプロジェクトは[MIT](./LICENSE)ライセンスの下でライセンスされています。
+Copyright © 2025 [Mintplex Labs][profile-link]。<br />
+このプロジェクトは[MIT](https://github.com/Mintplex-Labs/anything-llm/blob/master/LICENSE)ライセンスの下でライセンスされています。
 
 <!-- LINK GROUP -->
 

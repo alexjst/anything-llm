@@ -1,5 +1,6 @@
 const { setDataSigner } = require("../middleware/setDataSigner");
 const { verifyPayloadIntegrity } = require("../middleware/verifyIntegrity");
+const { resolveRepoLoader, resolveRepoLoaderFunction } = require("../utils/extensions/RepoLoader");
 const { reqBody } = require("../utils/http");
 const { validURL } = require("../utils/url");
 const RESYNC_METHODS = require("./resync");
@@ -28,12 +29,12 @@ function extensions(app) {
   )
 
   app.post(
-    "/ext/github-repo",
+    "/ext/:repo_platform-repo",
     [verifyPayloadIntegrity, setDataSigner],
     async function (request, response) {
       try {
-        const { loadGithubRepo } = require("../utils/extensions/GithubRepo");
-        const { success, reason, data } = await loadGithubRepo(
+        const loadRepo = resolveRepoLoaderFunction(request.params.repo_platform);
+        const { success, reason, data } = await loadRepo(
           reqBody(request),
           response,
         );
@@ -56,12 +57,12 @@ function extensions(app) {
 
   // gets all branches for a specific repo
   app.post(
-    "/ext/github-repo/branches",
+    "/ext/:repo_platform-repo/branches",
     [verifyPayloadIntegrity],
     async function (request, response) {
       try {
-        const GithubRepoLoader = require("../utils/extensions/GithubRepo/RepoLoader");
-        const allBranches = await new GithubRepoLoader(
+        const RepoLoader = resolveRepoLoader(request.params.repo_platform);
+        const allBranches = await new RepoLoader(
           reqBody(request)
         ).getRepoBranches();
         response.status(200).json({
@@ -117,8 +118,7 @@ function extensions(app) {
       try {
         const websiteDepth = require("../utils/extensions/WebsiteDepth");
         const { url, depth = 1, maxLinks = 20 } = reqBody(request);
-        if (!validURL(url)) return { success: false, reason: "Not a valid URL." };
-
+        if (!validURL(url)) throw new Error("Not a valid URL.");
         const scrapedData = await websiteDepth(url, depth, maxLinks);
         response.status(200).json({ success: true, data: scrapedData });
       } catch (e) {
@@ -136,6 +136,32 @@ function extensions(app) {
       try {
         const { loadConfluence } = require("../utils/extensions/Confluence");
         const { success, reason, data } = await loadConfluence(
+          reqBody(request),
+          response
+        );
+        response.status(200).json({ success, reason, data });
+      } catch (e) {
+        console.error(e);
+        response.status(400).json({
+          success: false,
+          reason: e.message,
+          data: {
+            title: null,
+            author: null,
+          },
+        });
+      }
+      return;
+    }
+  );
+
+  app.post(
+    "/ext/drupalwiki",
+    [verifyPayloadIntegrity, setDataSigner],
+    async function (request, response) {
+      try {
+        const { loadAndStoreSpaces } = require("../utils/extensions/DrupalWiki");
+        const { success, reason, data } = await loadAndStoreSpaces(
           reqBody(request),
           response
         );

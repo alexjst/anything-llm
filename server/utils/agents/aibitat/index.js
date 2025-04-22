@@ -491,9 +491,7 @@ Only return the role.
     // and remove the @ from the response
     const { result } = await provider.complete(messages);
     const name = result?.replace(/^@/g, "");
-    if (this.agents.get(name)) {
-      return name;
-    }
+    if (this.agents.get(name)) return name;
 
     // if the name is not in the nodes, return a random node
     return availableNodes[Math.floor(Math.random() * availableNodes.length)];
@@ -504,9 +502,13 @@ Only return the role.
    * @param {string} pluginName this name of the plugin being called
    * @returns string of the plugin to be called compensating for children denoted by # in the string.
    * eg: sql-agent:list-database-connections
+   * or is a custom plugin
+   * eg: @@custom-plugin-name
    */
   #parseFunctionName(pluginName = "") {
-    if (!pluginName.includes("#")) return pluginName;
+    if (!pluginName.includes("#") && !pluginName.startsWith("@@"))
+      return pluginName;
+    if (pluginName.startsWith("@@")) return pluginName.replace("@@", "");
     return pluginName.split("#")[1];
   }
 
@@ -752,7 +754,7 @@ ${this.getHistory({ to: route.to })
       case "anthropic":
         return new Providers.AnthropicProvider({ model: config.model });
       case "lmstudio":
-        return new Providers.LMStudioProvider({});
+        return new Providers.LMStudioProvider({ model: config.model });
       case "ollama":
         return new Providers.OllamaProvider({ model: config.model });
       case "groq":
@@ -775,10 +777,29 @@ ${this.getHistory({ to: route.to })
         return new Providers.PerplexityProvider({ model: config.model });
       case "textgenwebui":
         return new Providers.TextWebGenUiProvider({});
-
+      case "bedrock":
+        return new Providers.AWSBedrockProvider({});
+      case "fireworksai":
+        return new Providers.FireworksAIProvider({ model: config.model });
+      case "nvidia-nim":
+        return new Providers.NvidiaNimProvider({ model: config.model });
+      case "deepseek":
+        return new Providers.DeepSeekProvider({ model: config.model });
+      case "litellm":
+        return new Providers.LiteLLMProvider({ model: config.model });
+      case "apipie":
+        return new Providers.ApiPieProvider({ model: config.model });
+      case "xai":
+        return new Providers.XAIProvider({ model: config.model });
+      case "novita":
+        return new Providers.NovitaProvider({ model: config.model });
+      case "ppio":
+        return new Providers.PPIOProvider({ model: config.model });
+      case "gemini":
+        return new Providers.GeminiProvider({ model: config.model });
       default:
         throw new Error(
-          `Unknown provider: ${config.provider}. Please use "openai"`
+          `Unknown provider: ${config.provider}. Please use a valid provider.`
         );
     }
   }

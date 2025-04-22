@@ -1,5 +1,16 @@
 import { API_BASE } from "./constants";
 
+function applyOptions(path, options = {}) {
+  let updatedPath = path;
+  if (!options || Object.keys(options).length === 0) return updatedPath;
+
+  if (options.search) {
+    const searchParams = new URLSearchParams(options.search);
+    updatedPath += `?${searchParams.toString()}`;
+  }
+  return updatedPath;
+}
+
 export default {
   home: () => {
     return "/";
@@ -40,7 +51,7 @@ export default {
     return "https://discord.com/invite/6UyHPeGZAC";
   },
   docs: () => {
-    return "https://docs.useanything.com";
+    return "https://docs.anythingllm.com";
   },
   mailToMintplex: () => {
     return "mailto:team@mintplexlabs.com";
@@ -49,15 +60,18 @@ export default {
     return "https://my.mintplexlabs.com/aio-checkout?product=anythingllm";
   },
   workspace: {
-    chat: (slug) => {
-      return `/workspace/${slug}`;
+    chat: (slug, options = {}) => {
+      return applyOptions(`/workspace/${slug}`, options);
     },
     settings: {
       generalAppearance: (slug) => {
         return `/workspace/${slug}/settings/general-appearance`;
       },
-      chatSettings: (slug) => {
-        return `/workspace/${slug}/settings/chat-settings`;
+      chatSettings: function (slug, options = {}) {
+        return applyOptions(
+          `/workspace/${slug}/settings/chat-settings`,
+          options
+        );
       },
       vectorDatabase: (slug) => {
         return `/workspace/${slug}/settings/vector-database`;
@@ -77,9 +91,6 @@ export default {
     return `${API_BASE}/docs`;
   },
   settings: {
-    system: () => {
-      return `/settings/system-preferences`;
-    },
     users: () => {
       return `/settings/users`;
     },
@@ -114,8 +125,11 @@ export default {
     security: () => {
       return "/settings/security";
     },
-    appearance: () => {
-      return "/settings/appearance";
+    interface: () => {
+      return "/settings/interface";
+    },
+    branding: () => {
+      return "/settings/branding";
     },
     agentSkills: () => {
       return "/settings/agents";
@@ -123,6 +137,7 @@ export default {
     apiKeys: () => {
       return "/settings/api-keys";
     },
+    systemPromptVariables: () => "/settings/system-prompt-variables",
     logs: () => {
       return "/settings/event-logs";
     },
@@ -135,10 +150,53 @@ export default {
     embedChats: () => {
       return `/settings/embed-chats`;
     },
+    browserExtension: () => {
+      return `/settings/browser-extension`;
+    },
     experimental: () => {
       return `/settings/beta-features`;
     },
   },
+  agents: {
+    builder: () => {
+      return `/settings/agents/builder`;
+    },
+    editAgent: (uuid) => {
+      return `/settings/agents/builder/${uuid}`;
+    },
+  },
+  communityHub: {
+    website: () => {
+      return import.meta.env.DEV
+        ? `http://localhost:5173`
+        : `https://hub.anythingllm.com`;
+    },
+    /**
+     * View more items of a given type on the community hub.
+     * @param {string} type - The type of items to view more of. Should be kebab-case.
+     * @returns {string} The path to view more items of the given type.
+     */
+    viewMoreOfType: function (type) {
+      return `${this.website()}/list/${type}`;
+    },
+    trending: () => {
+      return `/settings/community-hub/trending`;
+    },
+    authentication: () => {
+      return `/settings/community-hub/authentication`;
+    },
+    importItem: (importItemId) => {
+      return `/settings/community-hub/import-item${importItemId ? `?id=${importItemId}` : ""}`;
+    },
+    profile: function (username) {
+      if (username) return `${this.website()}/u/${username}`;
+      return `${this.website()}/me`;
+    },
+    noPrivateItems: () => {
+      return "https://docs.anythingllm.com/community-hub/faq#no-private-items";
+    },
+  },
+
   experimental: {
     liveDocumentSync: {
       manage: () => `/settings/beta-features/live-document-sync/manage`,

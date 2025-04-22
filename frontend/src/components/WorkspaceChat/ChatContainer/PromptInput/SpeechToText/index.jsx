@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Microphone } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import _regeneratorRuntime from "regenerator-runtime";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
+import { PROMPT_INPUT_EVENT } from "../../PromptInput";
+import { useTranslation } from "react-i18next";
 
 let timeout;
 const SILENCE_INTERVAL = 3_200; // wait in seconds of silence before closing.
@@ -19,7 +21,7 @@ export default function SpeechToText({ sendCommand }) {
   } = useSpeechRecognition({
     clearTranscriptOnListen: true,
   });
-
+  const { t } = useTranslation();
   function startSTTSession() {
     if (!isMicrophoneAvailable) {
       alert(
@@ -35,7 +37,7 @@ export default function SpeechToText({ sendCommand }) {
     });
   }
 
-  function endTTSSession() {
+  function endSTTSession() {
     SpeechRecognition.stopListening();
     if (transcript.length > 0) {
       sendCommand(transcript, true);
@@ -45,31 +47,68 @@ export default function SpeechToText({ sendCommand }) {
     clearTimeout(timeout);
   }
 
+  const handleKeyPress = useCallback(
+    (event) => {
+      if (event.ctrlKey && event.keyCode === 77) {
+        if (listening) {
+          endSTTSession();
+        } else {
+          startSTTSession();
+        }
+      }
+    },
+    [listening, endSTTSession, startSTTSession]
+  );
+
+  function handlePromptUpdate(e) {
+    if (!e?.detail && timeout) {
+      endSTTSession();
+      clearTimeout(timeout);
+    }
+  }
+
   useEffect(() => {
-    if (transcript?.length > 0) {
+    document.addEventListener("keydown", handleKeyPress);
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [handleKeyPress]);
+
+  useEffect(() => {
+    if (!!window)
+      window.addEventListener(PROMPT_INPUT_EVENT, handlePromptUpdate);
+    return () =>
+      window?.removeEventListener(PROMPT_INPUT_EVENT, handlePromptUpdate);
+  }, []);
+
+  useEffect(() => {
+    if (transcript?.length > 0 && listening) {
       sendCommand(transcript, false);
       clearTimeout(timeout);
       timeout = setTimeout(() => {
-        endTTSSession();
+        endSTTSession();
       }, SILENCE_INTERVAL);
     }
-  }, [transcript]);
+  }, [transcript, listening]);
 
   if (!browserSupportsSpeechRecognition) return null;
   return (
     <div
       id="text-size-btn"
       data-tooltip-id="tooltip-text-size-btn"
-      data-tooltip-content="Speak your prompt"
-      aria-label="Speak your prompt"
-      onClick={listening ? endTTSSession : startSTTSession}
-      className={`relative flex justify-center items-center opacity-60 hover:opacity-100 cursor-pointer ${
+      data-tooltip-content={t("chat_window.microphone")}
+      aria-label={t("chat_window.microphone")}
+      onClick={listening ? endSTTSession : startSTTSession}
+      className={`border-none relative flex justify-center items-center opacity-60 hover:opacity-100 light:opacity-100 light:hover:opacity-60 cursor-pointer ${
         !!listening ? "!opacity-100" : ""
       }`}
     >
       <Microphone
         weight="fill"
-        className="w-6 h-6 pointer-events-none text-white"
+        color="var(--theme-sidebar-footer-icon-fill)"
+        className={`w-[22px] h-[22px] pointer-events-none text-theme-text-primary ${
+          listening ? "animate-pulse-glow" : ""
+        }`}
       />
       <Tooltip
         id="tooltip-text-size-btn"

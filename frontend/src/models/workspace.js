@@ -1,11 +1,13 @@
 import { API_BASE } from "@/utils/constants";
-import { baseHeaders } from "@/utils/request";
+import { baseHeaders, safeJsonParse } from "@/utils/request";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import WorkspaceThread from "@/models/workspaceThread";
 import { v4 } from "uuid";
 import { ABORT_STREAM_EVENT } from "@/utils/chat";
 
 const Workspace = {
+  workspaceOrderStorageKey: "anythingllm-workspace-order",
+
   new: async function (data = {}) {
     const { workspace, message } = await fetch(`${API_BASE}/workspace/new`, {
       method: "POST",
@@ -110,7 +112,28 @@ const Workspace = {
       );
     return this._updateChatResponse(slug, chatId, newText);
   },
-  streamChat: async function ({ slug }, message, handleChat) {
+  multiplexStream: async function ({
+    workspaceSlug,
+    threadSlug = null,
+    prompt,
+    chatHandler,
+    attachments = [],
+  }) {
+    if (!!threadSlug)
+      return this.threads.streamChat(
+        { workspaceSlug, threadSlug },
+        prompt,
+        chatHandler,
+        attachments
+      );
+    return this.streamChat(
+      { slug: workspaceSlug },
+      prompt,
+      chatHandler,
+      attachments
+    );
+  },
+  streamChat: async function ({ slug }, message, handleChat, attachments = []) {
     const ctrl = new AbortController();
 
     // Listen for the ABORT_STREAM_EVENT key to be emitted by the client
@@ -124,7 +147,7 @@ const Workspace = {
 
     await fetchEventSource(`${API_BASE}/workspace/${slug}/stream-chat`, {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, attachments }),
       headers: baseHeaders(),
       signal: ctrl.signal,
       openWhenHidden: true,
@@ -411,6 +434,80 @@ const Workspace = {
         return null;
       });
   },
+  /**
+   * Uploads and embeds a single file in a single call into a workspace
+   * @param {string} slug - workspace slug
+   * @param {FormData} formData
+   * @returns {Promise<{response: {ok: boolean}, data: {success: boolean, error: string|null, document: {id: string, location:string}|null}}>}
+   */
+  uploadAndEmbedFile: async function (slug, formData) {
+    const response = await fetch(
+      `${API_BASE}/workspace/${slug}/upload-and-embed`,
+      {
+        method: "POST",
+        body: formData,
+        headers: baseHeaders(),
+      }
+    );
+
+    const data = await response.json();
+    return { response, data };
+  },
+
+  /**
+   * Deletes and un-embeds a single file in a single call from a workspace
+   * @param {string} slug - workspace slug
+   * @param {string} documentLocation - location of file eg: custom-documents/my-file-uuid.json
+   * @returns {Promise<boolean>}
+   */
+  deleteAndUnembedFile: async function (slug, documentLocation) {
+    const response = await fetch(
+      `${API_BASE}/workspace/${slug}/remove-and-unembed`,
+      {
+        method: "DELETE",
+        body: JSON.stringify({ documentLocation }),
+        headers: baseHeaders(),
+      }
+    );
+    return response.ok;
+  },
+
+  /**
+   * Reorders workspaces in the UI via localstorage on client side.
+   * @param {string[]} workspaceIds - array of workspace ids to reorder
+   * @returns {boolean}
+   */
+  storeWorkspaceOrder: function (workspaceIds = []) {
+    try {
+      localStorage.setItem(
+        this.workspaceOrderStorageKey,
+        JSON.stringify(workspaceIds)
+      );
+      return true;
+    } catch (error) {
+      console.error("Error reordering workspaces:", error);
+      return false;
+    }
+  },
+
+  /**
+   * Orders workspaces based on the order preference stored in localstorage
+   * @param {Array} workspaces - array of workspace JSON objects
+   * @returns {Array} - ordered workspaces
+   */
+  orderWorkspaces: function (workspaces = []) {
+    const workspaceOrderPreference =
+      safeJsonParse(localStorage.getItem(this.workspaceOrderStorageKey)) || [];
+    if (workspaceOrderPreference.length === 0) return workspaces;
+    const orderedWorkspaces = Array.from(workspaces);
+    orderedWorkspaces.sort(
+      (a, b) =>
+        workspaceOrderPreference.indexOf(a.id) -
+        workspaceOrderPreference.indexOf(b.id)
+    );
+    return orderedWorkspaces;
+  },
+
   threads: WorkspaceThread,
 };
 

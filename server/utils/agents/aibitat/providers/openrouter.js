@@ -17,7 +17,7 @@ class OpenRouterProvider extends InheritMultiple([Provider, UnTooled]) {
       apiKey: process.env.OPENROUTER_API_KEY,
       maxRetries: 3,
       defaultHeaders: {
-        "HTTP-Referer": "https://useanything.com",
+        "HTTP-Referer": "https://anythingllm.com",
         "X-Title": "AnythingLLM",
       },
     });
@@ -57,7 +57,7 @@ class OpenRouterProvider extends InheritMultiple([Provider, UnTooled]) {
    * @param functions
    * @returns The completion.
    */
-  async complete(messages, functions = null) {
+  async complete(messages, functions = []) {
     try {
       let completion;
       if (functions.length > 0) {

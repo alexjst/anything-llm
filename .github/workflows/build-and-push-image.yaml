@@ -1,9 +1,9 @@
-# This Github action is for publishing of the primary image for AnythingLLM
+# This GitHub action is for publishing of the primary image for AnythingLLM
 # It will publish a linux/amd64 and linux/arm64 image at the same time
 # This file should ONLY BY USED FOR `master` BRANCH. 
-# TODO: Update `runs-on` for arm64 when GitHub finally supports
-# native arm environments as QEMU takes around 1 hour to build
-# ref: https://github.com/actions/runner-images/issues/5631 :(
+# TODO: GitHub now has an ubuntu-24.04-arm64 runner, but we still need
+# to use QEMU to build the arm64 image because Chromium is not available for Linux arm64
+# so builds will still fail, or fail much more often. Its inconsistent and frustrating.
 name: Publish AnythingLLM Primary Docker image (amd64/arm64)
 
 concurrency:
@@ -15,14 +15,17 @@ on:
     branches: ['master'] # master branch only. Do not modify.
     paths-ignore:
       - '**.md'
-      - 'cloud-deployments/*'
+      - '.gitmodules'
+      - 'cloud-deployments/**/*'
       - 'images/**/*'
       - '.vscode/**/*'
       - '**/.env.example'
       - '.github/ISSUE_TEMPLATE/**/*'
-      - 'embed/**/*' # Embed should be published to frontend (yarn build:publish) if any changes are introduced
+      - '.devcontainer/**/*'
+      - 'embed/**/*' # Embed is submodule
+      - 'browser-extension/**/*' # Chrome extension is submodule
       - 'server/utils/agents/aibitat/example/**/*' # Do not push new image for local dev testing of new aibitat images.
-      - 'docker/vex/*' # CVE exceptions we know are not in risk
+      - 'extras/**/*' # Extra is just for news and other local content.
 
 jobs:
   push_multi_platform_to_registries:
@@ -53,6 +56,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          version: v0.22.0
       
       - name: Log in to Docker Hub
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
@@ -95,3 +100,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      
+      # For Docker scout there are some intermediary reported CVEs which exists outside
+      # of execution content or are unreachable by an attacker but exist in image.
+      # We create VEX files for these so they don't show in scout summary. 
+      - name: Collect known and verified CVE exceptions
+        id: cve-list
+        run: |
+          # Collect CVEs from filenames in vex folder
+          CVE_NAMES=""
+          for file in ./docker/vex/*.vex.json; do
+            [ -e "$file" ] || continue
+            filename=$(basename "$file")
+            stripped_filename=${filename%.vex.json}
+            CVE_NAMES+=" $stripped_filename"
+          done
+          echo "CVE_EXCEPTIONS=$CVE_NAMES" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # About VEX attestations https://docs.docker.com/scout/explore/exceptions/
+      # Justifications https://github.com/openvex/spec/blob/main/OPENVEX-SPEC.md#status-justifications
+      - name: Add VEX attestations
+        env:
+          CVE_EXCEPTIONS: ${{ steps.cve-list.outputs.CVE_EXCEPTIONS }}
+        run: |
+          echo $CVE_EXCEPTIONS
+          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          for cve in $CVE_EXCEPTIONS; do
+            for tag in "${{ join(fromJSON(steps.meta.outputs.json).tags, ' ') }}"; do
+              echo "Attaching VEX exception $cve to $tag"
+              docker scout attestation add \
+              --file "./docker/vex/$cve.vex.json" \
+              --predicate-type https://openvex.dev/ns/v0.2.0 \
+              $tag
+            done
+          done
+        shell: bash
